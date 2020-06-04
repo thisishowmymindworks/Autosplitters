@@ -1,6 +1,6 @@
 state("10SNX")
 {
-  double starCount : 0x003CA734, 0x34, 0x10, 0x718, 0x6C0;
+    double starCount : 0x003CA734, 0x34, 0x10, 0x718, 0x6C0;
 		
 	double marathonL1 : 0x003B4E04, 0xE8, 0x124, 0x4, 0x0;
 	double marathonL2 : 0x003B4E04, 0xE8, 0x124, 0x4, 0x10;
@@ -23,6 +23,9 @@ state("10SNX")
 startup 
 {
 	//USED FOR ADDING SETTINGS AND SETTING VARIABLES
+	settings.Add("auto_restart", true, "Forcibly restart game when save file is deleted");
+	settings.SetToolTip("auto_restart", "Only needed for splitting on marathon mode. Will only be done if the script has split at least once because of a marathon.");
+	
 	settings.Add("auto_start", true, "Automatically start timer");
 	settings.SetToolTip("auto_start", "Automatically starts the timer either when you hit start on the title screen, or when you enter the first level of any world.");
 	
@@ -95,7 +98,16 @@ update
 	if (current.starCount < old.starCount && current.starCount == 0) {
 		vars.lastStarSplit = 0;
 		vars.splitOnBenjiEnd = false;
-		vars.hasSplitMarathon = new bool[12];
+		// If auto_restart is enabled, and the script has split at least once on a marathon, restart the game
+		// (this is needed to reset the marathon rank values in memory)
+		if (settings["auto_restart"] && Array.IndexOf(vars.hasSplitMarathon, true) != -1) {
+			vars.hasSplitMarathon = new bool[12];
+			string exePath = game.MainModule.FileName;
+			game.Kill();
+			game.WaitForExit();
+			ProcessStartInfo psi = new ProcessStartInfo(exePath);
+			game = Process.Start(psi);
+		}
 		return false;
 	}
 	
